@@ -1,0 +1,69 @@
+kind: Namespace #first we have to create the namespace
+apiVersion: v1
+metadata:
+  name:  first-deploy
+---
+apiVersion: apps/v1 #second we have to create the deployment
+kind: Deployment
+metadata:
+  name: hi-firstdeploy
+  namespace: first-deploy
+  labels:
+    app: welcome
+spec:
+  selector:
+    matchLabels:
+      app: welcome
+  replicas: 3
+  template:
+    metadata:
+      labels: 
+        app: welcome
+    spec:
+      containers:
+      - name: welcome
+        image: pbitty/hello-from:latest
+        resources:
+          requests:
+            cpu: 100m
+            memory: 100Mi
+          limits:
+            cpu: 100m
+            memory: 200Mi
+        ports:
+        - containerPort: 80
+---
+# https://kubernetes.io/docs/concepts/services-networking/service/
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-service
+  namespace: first-deploy
+spec:
+  selector:
+    app: welcome
+  type: ClusterIP
+  ports:
+  - name: my
+    protocol: TCP
+    port: 80
+    targetPort: 80
+---
+# https://kubernetes.io/docs/concepts/services-networking/ingress/
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: hi-ingress
+  namespace: first-deploy
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: my-service
+            port:
+              number: 80
+---
